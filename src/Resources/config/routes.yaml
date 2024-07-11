@@ -1,0 +1,5 @@
+controllers:
+    resource:
+        path: '@SnokeOAuthServerBundle/src/Controller/'
+        namespace: Snoke\OAuthServer\Controller
+    type: attribute

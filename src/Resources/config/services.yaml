@@ -1,0 +1,9 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+
+  Snoke\OAuthServer\:
+    autowire: true
+    autoconfigure: true
+    resource: '../../'
