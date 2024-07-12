@@ -14,7 +14,7 @@ add the custom repository to composer.json
 ],
 ```
 
-hit ```composer require snoke/symfony-oauth-server``` to install the package
+hit ```composer require snoke/symfony-oauth-server:dev-master``` to install the package
 
 ## configuration
 edit ```config/packes/snoke_o_auth_server.yaml```
@@ -44,7 +44,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Authent
 
 ### Scopes
 #### create a scope:
-scopes are implemented as DTOs as shown in the following example
+Scopes are implemented as DTOs (Data Transfer Objects). Here is an example:
 ```php
 namespace App\DTO\Scope;
 use App\Entity\User;
@@ -61,7 +61,7 @@ readonly class EmailScope implements ScopeInterface
 }
 ```
 #### create a scope collection:
-you will also need a scope collection to tell the bundle which scopes are available
+You will also need a scope collection to define the available scopes for the bundle:
 ```php
 namespace App\Collection;
 
@@ -87,15 +87,35 @@ snoke_o_auth_server:
 ### Authenticator
 #### Edit your authenticator, a successful login must redirect to the auth_code_uri.
 
-if you are using the default form authenticator you can simply add following line to your login template within the
-```<form>```-block
+If you are using the default form authenticator, add the following line to your login template within the ```<form>```-block
 ```html
 <input type="hidden" name="_target_path" value="{{ path('snoke_o_auth_server_auth_code') }}">
 ```
 if you are using a custom authenticator, you can use the method ```onAuthenticationSuccess```
 ```php
-    public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
-    {
-        return new RedirectResponse($this->generateUrl('snoke_o_auth_server_auth_code'));
-    }
+public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
+{
+    return new RedirectResponse($this->generateUrl('snoke_o_auth_server_auth_code'));
+}
 ```
+
+## Clients
+### create a client
+you can create a client with the following command:
+```php bin/console oauth:create:client```
+### client workflow
+- a client will forward a user to the authorize uri and provide its client_id, client_secret and scopes as query parameters:
+    ```https://www.yourserver.example/authorize?client_id=123456&client_secret=12346&scopes=email```
+
+  this will redirect the client to your login. after a successful login the user will be redirected to the clients redirect_uri with an ```AuthCode``` as query parameter
+
+
+- the client can now trade his auth code for an ```AccessToken``` by making a requeust to the access-token-uri
+  
+    ```https://www.yourserver.example/accessToken?client_id=123456&client_secret=12346&scopes=email&code=12346```
+
+
+- having the access token, it can now be used to fetch user informations (defined by the scopes) from
+  ```https://www.yourserver.example/decodeToken?client_id=123456&client_secret=12346&scopes=email&token=12346```
+
+
