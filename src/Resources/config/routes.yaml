@@ -3,3 +3,23 @@ controllers:
         path: '@SnokeOAuthServerBundle/src/Controller/'
         namespace: Snoke\OAuthServer\Controller
     type: attribute
+
+snoke_o_auth_server_access_token:
+    path: '%snoke_o_auth_server.access_token_uri%'
+    controller: Snoke\OAuthServer\Controller\OAuthController::accessToken
+    methods: ['GET']
+
+snoke_o_auth_server_decode_token:
+    path: '%snoke_o_auth_server.decode_token_uri%'
+    controller: Snoke\OAuthServer\Controller\OAuthController::decodeToken
+    methods: ['GET']
+
+snoke_o_auth_server_authorize:
+    path: '%snoke_o_auth_server.authorize_uri%'
+    controller: Snoke\OAuthServer\Controller\OAuthController::authorize
+    methods: ['GET']
+
+snoke_o_auth_server_auth_code:
+    path: '%snoke_o_auth_server.auth_code_uri%'
+    controller: Snoke\OAuthServer\Controller\OAuthController::authCode
+    methods: ['GET']
