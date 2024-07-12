@@ -17,7 +17,7 @@ add the custom repository to composer.json
 hit ```composer require snoke/symfony-oauth-server``` to install the package
 
 ## configuration
-edit ```config/packes/snoke_o_auth_server.yaml``` in your project folder
+edit ```config/packes/snoke_o_auth_server.yaml```
 - set the **login_uri** to your custom login uri
 - set **authenticatable** to the class you want to authenticate (probably your User class)
 ```yaml
