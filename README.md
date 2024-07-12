@@ -108,7 +108,7 @@ you can create a client with the following command:
 
   ```https://www.yourserver.example/authorize?client_id=123456&client_secret=12346&scopes=email```
 
-  this will redirect the client to your login. after a successful login the user will be redirected to the clients redirect_uri with an ```AuthCode``` as query parameter
+  this will redirect the user to your login. after a successful login the user will be redirected to the clients redirect_uri with an ```AuthCode``` as query parameter
 
 
 - the client can now trade his auth code for an ```AccessToken``` by making a request to the access-token-uri
