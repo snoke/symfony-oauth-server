@@ -105,7 +105,8 @@ you can create a client with the following command:
 ```php bin/console oauth:create:client```
 ### client workflow
 - a client will forward a user to the authorize uri and provide its client_id, client_secret and scopes as query parameters:
-    ```https://www.yourserver.example/authorize?client_id=123456&client_secret=12346&scopes=email```
+
+  ```https://www.yourserver.example/authorize?client_id=123456&client_secret=12346&scopes=email```
 
   this will redirect the client to your login. after a successful login the user will be redirected to the clients redirect_uri with an ```AuthCode``` as query parameter
 
@@ -116,6 +117,7 @@ you can create a client with the following command:
 
 
 - having the access token, it can now be used to fetch user informations (defined by the scopes) from
+  
   ```https://www.yourserver.example/decodeToken?client_id=123456&client_secret=12346&scopes=email&token=12346```
 
-
+note that these are the default routes, you can change them in the configuration yaml
