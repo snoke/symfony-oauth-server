@@ -1,5 +1,5 @@
 # Symfony OAuth Server Bundle
-bundle to run your own oauth2 server for Symfony7
+bundle for Symfony7 to run your own oauth2 server
 
 Work in progress
 
