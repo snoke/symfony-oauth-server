@@ -13,6 +13,7 @@ class SnokeOAuthServerExtension extends Extension
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
         $container->setParameter('snoke_o_auth_server', $config);
+        $container->setParameter('snoke_o_auth_server', $config);
         $container->setParameter('snoke_o_auth_server.authorize_uri', $config['authorize_uri']);
         $container->setParameter('snoke_o_auth_server.auth_code_uri', $config['auth_code_uri']);
         $container->setParameter('snoke_o_auth_server.access_token_uri', $config['access_token_uri']);

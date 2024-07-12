@@ -6,10 +6,6 @@ services:
   Snoke\OAuthServer\:
     autowire: true
     autoconfigure: true
-    resource: '../../'
+    resource: '../../*'
+    exclude: '../../{DependencyInjection,Entity,Migrations,Tests,Kernel.php}'
 
-  mapping.listener:
-    class: Snoke\OAuthServer\EventListener\LoadClassMetadataListener
-    arguments: []
-    tags:
-      - { name: doctrine.event_listener, event: loadClassMetadata, lazy: true }
