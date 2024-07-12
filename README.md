@@ -104,7 +104,7 @@ public function onAuthenticationSuccess(Request $request, TokenInterface $token,
 you can create a client with the following command:
 ```php bin/console oauth:create:client```
 ### client workflow
-- a client will forward a user to the authorize uri and provide its client_id, client_secret and scopes as query parameters:
+- a client will forward a user to the authorize uri and provide its client_id, client_secret and the requested scopes as query parameters:
 
   ```https://www.yourserver.example/authorize?client_id=123456&client_secret=12346&scopes=email```
 
