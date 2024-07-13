@@ -2,6 +2,7 @@
 
 namespace Snoke\OAuthServer\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 use Snoke\OAuthServer\Interface\AuthenticatableInterface;
@@ -32,11 +33,11 @@ class AuthCode
     #[ORM\Column(type: "datetime", nullable: true)]
     private ?\DateTime $expiresAt = null;
 
-    public function __construct(Client $client, AuthenticatableInterface $user, ParameterBag $options)
+    public function __construct(Client $client, AuthenticatableInterface $user, ArrayCollection $scopes, ParameterBag $options)
     {
         $this->setClient($client);
         $this->setUser($user);
-        $this->setScopes($options->get('scopes'));
+        $this->setScopes($scopes);
 
         $invalidateCodeAfterSeconds = $options->get('invalidate_after');
 

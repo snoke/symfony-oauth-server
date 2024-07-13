@@ -8,6 +8,11 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
 class SnokeOAuthServerExtension extends Extension
 {
+    public function prepend(ContainerBuilder $container)
+    {
+        // Füge die Konfiguration zu Doctrine hinzu
+    }
+
     public function load(array $configs, ContainerBuilder $container)
     {
         $configuration = new Configuration();
@@ -18,13 +23,7 @@ class SnokeOAuthServerExtension extends Extension
         $container->setParameter('snoke_o_auth_server.auth_code_uri', $config['auth_code_uri']);
         $container->setParameter('snoke_o_auth_server.access_token_uri', $config['access_token_uri']);
         $container->setParameter('snoke_o_auth_server.decode_token_uri', $config['decode_token_uri']);
-
-        $container->prependExtensionConfig('snoke_interface_associations', [ 'remap' => [
-                [
-                    'source' => 'Snoke\OAuthServer\Interface\AuthenticatableInterface',
-                    'target' => $config['authenticatable'],
-                ],
-        ]]);
+        $container->setAlias('Snoke\OAuthServer\Interface\ScopeCollectionInterface', $config['scopes']);
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
         $loader->load('services.yaml');
     }

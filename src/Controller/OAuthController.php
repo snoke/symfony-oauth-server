@@ -22,19 +22,16 @@ class OAuthController extends AbstractController
 {
     private array $parameters;
 
-    public function __construct(private readonly EntityManagerInterface $em, ParameterBagInterface $parameterBag)
+    public function __construct(private readonly ScopeCollectionInterface $scopeCollection, private readonly EntityManagerInterface $em, ParameterBagInterface $parameterBag)
     {
         $this->parameters = $parameterBag->get('snoke_o_auth_server');
-        $scopes = new ($this->parameters['scopes']);
-        $this->scopes = new ArrayCollection($scopes->getScopes());
     }
 
     public function decodeToken(Request $request): Response
     {
-        $clientSecret = $request->query->get('client_secret');
         $scopes = explode(',',$request->query->get('scopes'));
+        $clientSecret = $request->query->get('client_secret');
         $token = $this->em->getRepository(AccessToken::class)->findOneBy(['token' => $request->query->get('token')]);
-
         if ($token->getScopes()->toArray() !==  $scopes) {
             throw new AuthServerException('scopes mismatch');
         }
@@ -47,13 +44,15 @@ class OAuthController extends AbstractController
 
         $response = [];
 
+        $scopesCollection = new ArrayCollection($this->scopeCollection->getScopes());
         foreach($scopes as $scope) {
             try {
-                $scopeDto = new ($this->scopes->get($scope))($user);
+
+                $scopeDto = $scopesCollection->get($scope);
             } catch(\Error $e) {
                 throw new AuthServerException('invalid scope');
             }
-            $response = array_merge($response,$scopeDto->toArray());
+            $response = array_merge($response,$scopeDto->toArray($user));
         }
 
         return new JsonResponse($response);
@@ -66,7 +65,6 @@ class OAuthController extends AbstractController
         $scopes = explode(',',$request->query->get('scopes'));
 
         $scopes =  is_array($scopes) ? $scopes : [$scopes];
-
         $authCode = $this->em->getRepository(AuthCode::class)->findOneBy(['code' =>  $request->query->get('code')]);
         if ($authCode->getScopes()->toArray() !==  $scopes) {
             throw new AuthServerException('scopes mismatch');
@@ -81,7 +79,6 @@ class OAuthController extends AbstractController
         $accessToken = new AccessToken($client,$user, $authCode->getScopes() ,new ParameterBag($this->parameters['access_token']));
 
         $this->em->persist($accessToken);
-        $this->em->remove($authCode);
 
         $this->em->flush();
 
@@ -108,7 +105,6 @@ class OAuthController extends AbstractController
         $scopes =  new ArrayCollection(is_array($scopes) ? $scopes : [$scopes]);
 
         $client = $this->em->getRepository(Client::class)->findOneBy(['clientID' => $clientID]);
-
         if ($client->getClientSecret() !== $clientSecret) {
             throw new AuthServerException('invalid client secret');
         }
@@ -118,7 +114,6 @@ class OAuthController extends AbstractController
         $this->em->persist($authCode);
 
         $this->em->flush();
-
         return new RedirectResponse($client->getRedirectUri().'?code='.$authCode->getCode());
     }
 
