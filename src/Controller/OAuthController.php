@@ -6,21 +6,16 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Snoke\OAuthServer\Exception\AuthServerException;
 use Snoke\OAuthServer\Interface\ScopeCollectionInterface;
-use Snoke\OAuthServer\ScopeCollection;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
-use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Attribute\Route;
 use Snoke\OAuthServer\Entity\AccessToken;
 use Snoke\OAuthServer\Entity\AuthCode;
 use Snoke\OAuthServer\Entity\Client;
-use Snoke\OAuthServer\Entity\User;
-use Snoke\OAuthServer\DTO\EmailScope;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 class OAuthController extends AbstractController

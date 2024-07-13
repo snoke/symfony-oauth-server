@@ -21,6 +21,11 @@
         }
     },
     "require": {
-        "php": "^8.2"
+        "symfony/yaml": "7.1.*",
+        "php": "^8.2",
+        "symfony/console": "7.1.*",
+        "doctrine/orm": "^3.2",
+        "snoke/interface-associations": "0.0.2",
+        "symfony/security-bundle": "7.1.*"
     }
 }

@@ -6,6 +6,7 @@ use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
+use Snoke\OAuthServer\DependencyInjection\Compiler\RemapConfigPass;
 class SnokeOAuthServerBundle extends Bundle
 {
     private function createRoutesFile($container) {
@@ -49,5 +50,6 @@ class SnokeOAuthServerBundle extends Bundle
         $this->createPackageFile($container);
 
         parent::build($container);
+        $container->addCompilerPass(new RemapConfigPass());
     }
 }
