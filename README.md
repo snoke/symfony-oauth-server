@@ -46,17 +46,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Authent
 #### create a scope:
 Scopes are implemented as DTOs (Data Transfer Objects). Here is an example:
 ```php
-namespace App\DTO\Scope;
-use App\Entity\User;
-use Snoke\OAuthServer\Interface\AuthenticatableInterface;
-use Snoke\OAuthServer\Interface\ScopeInterface;
+use App\Dto\Scope\EmailScope;
+use Snoke\OAuthServer\Interface\ScopeCollectionInterface;
 
-readonly class EmailScope implements ScopeInterface
+class ScopesCollection implements ScopeCollectionInterface
 {
-    public function toArray(AuthenticatableInterface $authenticatable): array {
+    public function __construct(private readonly EmailScope $emailScope) 
+    {}
 
-        /** @var User $authenticatable  */
-        return ['email' => $authenticatable->getEmail()];
+    public function getScopes(): array {
+        return [
+            'email' => $this->emailScope
+        ];
     }
 }
 ```
