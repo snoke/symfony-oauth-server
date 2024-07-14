@@ -19,6 +19,9 @@ class Client
     #[ORM\Column(length: 255, unique: true)]
     private ?string $clientID = null;
 
+    #[ORM\Column(length: 255, unique: true)]
+    private ?string $grantTypes = null;
+
     #[ORM\Column(length: 255)]
     private ?string $clientSecret = null;
 
@@ -67,6 +70,18 @@ class Client
     public function setClientID(string $clientID): static
     {
         $this->clientID = $clientID;
+
+        return $this;
+    }
+
+    public function getGrantTypes(): ?string
+    {
+        return $this->grantTypes;
+    }
+
+    public function setGrantTypes(string $grantTypes): static
+    {
+        $this->grantTypes = $grantTypes;
 
         return $this;
     }

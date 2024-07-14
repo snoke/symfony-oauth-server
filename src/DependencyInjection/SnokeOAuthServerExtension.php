@@ -23,6 +23,7 @@ class SnokeOAuthServerExtension extends Extension
         $container->setParameter('snoke_o_auth_server.auth_code_uri', $config['auth_code_uri']);
         $container->setParameter('snoke_o_auth_server.access_token_uri', $config['access_token_uri']);
         $container->setParameter('snoke_o_auth_server.decode_token_uri', $config['decode_token_uri']);
+        $container->setParameter('snoke_o_auth_server.refresh_token_uri', $config['refresh_token_uri']);
         $container->setAlias('Snoke\OAuthServer\Interface\ScopeCollectionInterface', $config['scopes']);
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
         $loader->load('services.yaml');

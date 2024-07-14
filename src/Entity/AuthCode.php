@@ -33,6 +33,9 @@ class AuthCode
     #[ORM\Column(type: "datetime", nullable: true)]
     private ?\DateTime $expiresAt = null;
 
+    #[ORM\Column(type: "datetime", nullable: true)]
+    private ?\DateTime $deletedAt = null;
+
     public function __construct(Client $client, AuthenticatableInterface $user, ArrayCollection $scopes, ParameterBag $options)
     {
         $this->setClient($client);
@@ -108,6 +111,18 @@ class AuthCode
     public function setExpiresAt(?\DateTime $expiresAt): static
     {
         $this->expiresAt = $expiresAt;
+
+        return $this;
+    }
+
+    public function getDeletedAt(): ?\DateTime
+    {
+        return $this->deletedAt;
+    }
+
+    public function setDeletedAt(?\DateTime $deletedAt): static
+    {
+        $this->deletedAt = $deletedAt;
 
         return $this;
     }

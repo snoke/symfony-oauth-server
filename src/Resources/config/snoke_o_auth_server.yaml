@@ -5,6 +5,7 @@ snoke_o_auth_server:
   auth_code_uri: '/authCode' # your authenticator must redirect to this uri after successful login!
   authorize_uri: '/authorize' # this uri will be called by your client, it will redirect to your login uri
   access_token_uri: '/accessToken' # this uri is called by the called where it can change its auth code for an access code
+  refresh_token_uri: '/refreshToken' # this uri is called by the called where it can change its auth code for an access code
   decode_token_uri: '/decodeToken' # this uri is a service where the client can trade his access token for user informations
   client:
     client_id:
@@ -12,8 +13,11 @@ snoke_o_auth_server:
     client_secret:
       length: 16 # string length of the client_secret
   auth_code:
-    invalidate_after: 3600  # time in seconds
+    invalidate_after: 3600  # 1 houur
     length: 16      # string length of the access token
   access_token:
-    invalidate_after: 3600  # time in seconds
+    invalidate_after: 3600  # 1 houur
+    length: 16      # string length of the access token
+  refresh_token:
+    invalidate_after: 2592000 # 30 days
     length: 16      # string length of the access token

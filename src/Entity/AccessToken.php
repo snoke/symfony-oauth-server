@@ -11,15 +11,16 @@ use Snoke\OAuthServer\Interface\AuthenticatableInterface;
 #[ORM\Entity(repositoryClass: AccessTokenRepository::class)]
 class AccessToken
 {
-    public function __construct(Client $client, AuthenticatableInterface $user, ArrayCollection $scopes,ParameterBag $options) {
+    public function __construct(Client $client, AuthenticatableInterface $user, ArrayCollection $scopes,ParameterBag $parameters) {
 
-        $invalidateTokenAfterSeconds = $options->get('invalidate_after');
+        $options = $parameters->get('access_token');
+        $invalidateTokenAfterSeconds = $options['invalidate_after'];
 
         if ($invalidateTokenAfterSeconds>0) {
             $this->setExpiresAt((new \DateTime())->modify('+' . $invalidateTokenAfterSeconds . ' seconds'));
         }
 
-        $this->setToken(bin2hex(random_bytes($options->get('length'))));
+        $this->setToken(bin2hex(random_bytes($options['length'])));
         $this->setUser($user);
         $this->setClient($client);
         $this->setScopes($scopes);
@@ -42,6 +43,9 @@ class AccessToken
 
     #[ORM\ManyToOne(inversedBy: 'accessTokens')]
     private AuthenticatableInterface $user;
+
+    #[ORM\ManyToOne(inversedBy: 'accessToken')]
+    private RefreshToken $refreshToken;
 
     #[ORM\Column(nullable: true)]
     private ?\DateTime $expiresAt = null;
@@ -106,6 +110,18 @@ class AccessToken
     public function setExpiresAt(?\DateTime $expiresAt): static
     {
         $this->expiresAt = $expiresAt;
+
+        return $this;
+    }
+
+    public function getRefreshToken(): ?RefreshToken
+    {
+        return $this->refreshToken;
+    }
+
+    public function setRefreshToken(?RefreshToken $refreshToken): static
+    {
+        $this->refreshToken = $refreshToken;
 
         return $this;
     }

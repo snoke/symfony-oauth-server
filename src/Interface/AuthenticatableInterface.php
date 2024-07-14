@@ -1,7 +1,9 @@
 <?php
 
 namespace Snoke\OAuthServer\Interface;
-interface AuthenticatableInterface
+use Symfony\Component\Security\Core\User\UserInterface;
+
+interface AuthenticatableInterface extends UserInterface
 {
 
 }
