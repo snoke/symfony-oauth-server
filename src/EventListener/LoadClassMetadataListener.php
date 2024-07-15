@@ -15,6 +15,8 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 #[AsDoctrineListener(event: Events::loadClassMetadata, priority: 500, connection: 'default')]
 class LoadClassMetadataListener
 {
+    private array $parameters;
+
     public function __construct(private readonly EntityManagerInterface $em, ParameterBagInterface $parameterBag)
     {
         $this->parameters = $parameterBag->get('snoke_o_auth_server');

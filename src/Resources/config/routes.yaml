@@ -8,6 +8,10 @@ snoke_o_auth_server_access_token:
     path: '%snoke_o_auth_server.access_token_uri%'
     controller: Snoke\OAuthServer\Controller\OAuthController::accessToken
     methods: ['GET']
+snoke_o_auth_server_refresh_token:
+    path: '%snoke_o_auth_server.refresh_token_uri%'
+    controller: Snoke\OAuthServer\Controller\OAuthController::refreshToken
+    methods: ['GET']
 
 snoke_o_auth_server_decode_token:
     path: '%snoke_o_auth_server.decode_token_uri%'
