@@ -11,16 +11,15 @@ use Snoke\OAuthServer\Interface\AuthenticatableInterface;
 #[ORM\Entity(repositoryClass: AccessTokenRepository::class)]
 class AccessToken
 {
-    public function __construct(Client $client, AuthenticatableInterface $user, ArrayCollection $scopes,ParameterBag $parameters) {
+    public function __construct(Client $client, AuthenticatableInterface $user, ArrayCollection $scopes,ParameterBag $options) {
 
-        $options = $parameters->get('access_token');
-        $invalidateTokenAfterSeconds = $options['invalidate_after'];
+        $invalidateTokenAfterSeconds = $options->get('invalidate_after');
 
         if ($invalidateTokenAfterSeconds>0) {
             $this->setExpiresAt((new \DateTime())->modify('+' . $invalidateTokenAfterSeconds . ' seconds'));
         }
 
-        $this->setToken(bin2hex(random_bytes($options['length'])));
+        $this->setToken(bin2hex(random_bytes($options->get('length'))));
         $this->setUser($user);
         $this->setClient($client);
         $this->setScopes($scopes);

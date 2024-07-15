@@ -5,9 +5,12 @@ namespace Snoke\OAuthServer\Controller;
 use App\Security\ResourceOwnerAuthenticator;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
 use Snoke\OAuthServer\Exception\AuthServerException;
 use Snoke\OAuthServer\Interface\ScopeCollectionInterface;
+use Snoke\OAuthServer\Interface\ScopeInterface;
+use Snoke\OAuthServer\Service\RequestService;
+use Snoke\OAuthServer\Service\SessionService;
+use Snoke\OAuthServer\Service\TokenService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
@@ -25,46 +28,35 @@ class OAuthController extends AbstractController
 {
     private ParameterBag $parameters;
 
-    private function createAccessToken(Client $client,UserInterface $user, array $scopes): AccessToken
-    {
-        $this->logger->info(__METHOD__);
-        $scopes = new ArrayCollection($scopes);
-        $accessToken = new AccessToken($client,$user, $scopes ,$this->parameters);
-        $this->em->persist($accessToken);
-        $permittedGrantTypes = json_decode($client->getGrantTypes(),true);
-
-        if (in_array('refresh_token', $permittedGrantTypes)) {
-            $refreshToken = new RefreshToken($client,$user, $scopes ,$this->parameters);
-            $accessToken->setRefreshToken($refreshToken);
-            $this->em->persist($refreshToken);
-
-        }
-
-        return $accessToken;
-    }
-
-    public function __construct(private readonly LoggerInterface $logger, private readonly ScopeCollectionInterface $scopeCollection, private readonly EntityManagerInterface $em, ParameterBagInterface $parameterBag,private readonly ?ResourceOwnerAuthenticator $resourceOwnerAuthenticator)
+    public function __construct(
+        private readonly TokenService $tokenService,
+        private readonly RequestService $requestService,
+        private readonly SessionService $sessionService,
+        private readonly ScopeCollectionInterface $scopeCollection,
+        private readonly EntityManagerInterface $em,
+        private readonly ?ResourceOwnerAuthenticator $resourceOwnerAuthenticator,
+        private readonly ParameterBagInterface $parameterBag,
+    )
     {
         $this->parameters = new ParameterBag($parameterBag->get('snoke_o_auth_server'));
     }
 
     public function decodeToken(Request $request): Response
     {
-        $this->logger->info(__METHOD__);
+        $bearer = $this->requestService->extractBearer();
+        $scopes = $this->requestService->getScopes();
+        $clientSecret = $this->requestService->getClientSecret();
+        $clientID = $this->requestService->getClientID();
 
-        $authorizationHeader = $request->headers->get('Authorization');
-        if (preg_match('/Bearer\s(\S+)/', $authorizationHeader, $matches)) {
-            $token = $matches[1];
-        } else {
-            throw new AuthServerException('invalid authorization header');
-        }
-        $scopes = explode(',',$request->query->get('scopes'));
-        $clientSecret = $request->query->get('client_secret');
-        $token = $this->em->getRepository(AccessToken::class)->findOneBy(['token' => $token]);
-        if ($token->getScopes()->toArray() !==  $scopes) {
+        $token = $this->em->getRepository(AccessToken::class)->findOneBy(['token' => $bearer]);
+        $client = $token->getClient();
+
+        if ($token->getScopes()->toArray() !==  $scopes->toArray()) {
             throw new AuthServerException('scopes mismatch');
         }
-        $client = $token->getClient();
+        if ($clientID !== $client->getClientId()) {
+            throw new AuthServerException('invalid client id');
+        }
         if ($client->getClientSecret() !== $clientSecret) {
             throw new AuthServerException('invalid client secret');
         }
@@ -73,10 +65,10 @@ class OAuthController extends AbstractController
 
         $response = [];
 
-        $scopesCollection = new ArrayCollection($this->scopeCollection->getScopes());
         foreach($scopes as $scope) {
             try {
-                $scopeDto = $scopesCollection->get($scope);
+                /** @var ScopeInterface $scopeDto */
+                $scopeDto = $this->scopeCollection->get($scope);
             } catch(\Error $e) {
                 throw new AuthServerException('invalid scope');
             }
@@ -88,29 +80,20 @@ class OAuthController extends AbstractController
 
     public function accessToken(Request $request): Response
     {
-        $this->logger->info(__METHOD__);
-        $authorizationHeader = $request->headers->get('Authorization');
-        if (preg_match('/Bearer\s(\S+)/', $authorizationHeader, $matches)) {
-            $token = $matches[1];
-        } else {
-            throw new AuthServerException('invalid authorization header');
-        }
-        $clientSecret = $request->query->get('client_secret');
-        $grantType = $request->query->get('grant_type') ?? 'authorization_code';
-        $scopes = explode(',',$request->query->get('scopes'));
+        $bearer = $this->requestService->extractBearer();
+        $clientID = $this->requestService->getClientID();
+        $clientSecret = $this->requestService->getClientSecret();
+        $grantType = $this->requestService->getGrantType();
+        $scopes = $this->requestService->getScopes();
 
-        $scopes =  is_array($scopes) ? $scopes : [$scopes];
-
-        $authCode = $this->em->getRepository(AuthCode::class)->findOneBy(
-            [
-                'code' =>  $token,
-            ]);
-
+        $authCode = $this->em->getRepository(AuthCode::class)->findOneBy([
+            'code' =>  $bearer,
+        ]);
 
         if ($authCode->getDeletedAt() !==  null) {
             throw new AuthServerException('Auth Token already used');
         }
-        if ($authCode->getScopes()->toArray() !==  $scopes) {
+        if ($authCode->getScopes()->toArray() !==  $scopes->toArray()) {
             throw new AuthServerException('scopes mismatch');
         }
 
@@ -121,7 +104,7 @@ class OAuthController extends AbstractController
 
         $user = $authCode->getUser();
 
-        $accessToken = $this->createAccessToken($client,$user, $scopes ,$this->parameters);
+        $accessToken = $this->tokenService->createAccessToken($client,$user, $scopes ,$this->parameters);
         $refreshToken = $accessToken->getRefreshToken();
 
         $authCode->setDeletedAt(new \DateTime());
@@ -139,27 +122,27 @@ class OAuthController extends AbstractController
         }));
     }
 
-    public function authorize(Request $request): Response {
-        $this->logger->info(__METHOD__);
-        $session = $request->getSession();
-        if (!$session->isStarted()) {
-            $session->start();
-        }
-        $session->set('client_id', $request->query->get('client_id'));
-        $session->set('client_secret', $request->query->get('client_secret'));
-        $session->set('scopes', $request->query->get('scopes'));
+    public function authorize(): Response
+    {
+        $clientID = $this->requestService->getClientID();
+        $clientSecret = $this->requestService->getClientSecret();
+        $grantType = $this->requestService->getGrantType();
+        $scopes = $this->requestService->getScopes();
+
+        $this->sessionService->setClientID($clientID);
+        $this->sessionService->setClientSecret($clientSecret);
+        $this->sessionService->setScopes($scopes);
+        $this->sessionService->setGrantType($grantType);
 
         return new RedirectResponse($this->parameters->get('login_uri'));
     }
 
     public function authCode(Request $request, UserInterface $user): Response
     {
-        $this->logger->info(__METHOD__);
-        $session = $request->getSession();
-        $clientID = $session->get('client_id');
-        $clientSecret = $session->get('client_secret');
-        $scopes = explode(',',$session->get('scopes'));
-        $scopes =  new ArrayCollection(is_array($scopes) ? $scopes : [$scopes]);
+        $clientID = $this->sessionService->getClientID();
+        $clientSecret = $this->sessionService->getClientSecret();
+        $grantType = $this->sessionService->getGrantType();
+        $scopes = $this->sessionService->getScopes();
 
         $client = $this->em->getRepository(Client::class)->findOneBy(['clientID' => $clientID]);
         if ($client->getClientSecret() !== $clientSecret) {
@@ -169,21 +152,20 @@ class OAuthController extends AbstractController
         $authCode = new AuthCode($client, $user, $scopes, new ParameterBag($this->parameters->get('auth_code')));
 
         $this->em->persist($authCode);
-
         $this->em->flush();
-        $code = $authCode->getCode();
+
         return new RedirectResponse($client->getRedirectUri().'?code='.$authCode->getCode());
     }
 
-    public function resourceOwner(Request $request): Reponse {
-        $this->logger->info(__METHOD__);
-        $clientID = $session->get('client_id');
+    public function resourceOwner(Request $request): Reponse
+    {
+        $clientID = $this->sessionService->getClientID();
+
         $client = $this->em->getRepository(Client::class)->findOneBy(['clientID' => $clientID]);
-        $scopes = explode(',',$request->query->get('scopes'));
-        $scopes =  is_array($scopes) ? $scopes : [$scopes];
+        $scopes = $this->requestService->getScopes();
 
         $passport = $this->resourceOwnerAuthenticator->authenticate($request);
-        $accessToken = $this->createAccessToken($client,$passport->getUser(), $scopes);
+        $accessToken = $this->tokenService->createAccessToken($client,$passport->getUser(), $scopes);
 
         $refreshToken = $accessToken->getRefreshToken();
 
@@ -199,18 +181,12 @@ class OAuthController extends AbstractController
         }));
     }
 
-    public function refreshToken(Request $request): Response
+    public function refreshToken(): Response
     {
-        $this->logger->info(__METHOD__);
-        $authorizationHeader = $request->headers->get('Authorization');
-        if (preg_match('/Bearer\s(\S+)/', $authorizationHeader, $matches)) {
-            $token = $matches[1];
-        } else {
-            throw new AuthServerException('invalid authorization header');
-        }
-        
-        $clientSecret = $request->query->get('client_secret');
-        $existingToken = $this->em->getRepository(RefreshToken::class)->findOneBy(['refreshToken' => $token]);
+        $bearer = $this->requestService->extractBearer();
+        $clientSecret = $this->requestService->getClientSecret();
+
+        $existingToken = $this->em->getRepository(RefreshToken::class)->findOneBy(['refreshToken' => $bearer]);
         $client = $existingToken->getClient();
         if (!in_array('refresh_token',json_decode($client->getGrantTypes()))) {
             throw new AuthServerException('invalid grant type');
@@ -229,7 +205,7 @@ class OAuthController extends AbstractController
         $user = $existingToken->getUser();
         $scopes = $existingToken->getScopes();
 
-        $accessToken = $this->createAccessToken($client,$user,$scopes);
+        $accessToken = $this->tokenService->createAccessToken($client,$user,$scopes);
         $refreshToken = $accessToken->getRefreshToken();
 
         $this->em->flush();
