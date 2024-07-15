@@ -11,7 +11,7 @@ add the custom repository to composer.json
         "type": "vcs",
         "url": "git@github.com:snoke/symfony-oauth-server.git"
     }
-],
+]
 ```
 
 hit ```composer require snoke/symfony-oauth-server:dev-master``` to install the package
@@ -46,18 +46,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Authent
 #### create a scope:
 Scopes are implemented as DTOs (Data Transfer Objects). Here is an example:
 ```php
-use App\Dto\Scope\EmailScope;
-use Snoke\OAuthServer\Interface\ScopeCollectionInterface;
+use App\Entity\User;
+use Doctrine\ORM\EntityManagerInterface;
+use Snoke\OAuthServer\Interface\AuthenticatableInterface;
+use Snoke\OAuthServer\Interface\ScopeInterface;
 
-class ScopesCollection implements ScopeCollectionInterface
+readonly class EmailScope implements ScopeInterface
 {
-    public function __construct(private readonly EmailScope $emailScope) 
-    {}
+    public function __construct(private readonly EntityManagerInterface $em)
+    {
+    }
+    
+    public function toArray(AuthenticatableInterface $authenticatable): array 
+    {
 
-    public function getScopes(): array {
-        return [
-            'email' => $this->emailScope
-        ];
+        /** @var User $authenticatable  */
+        $user = $this->em->getRepository(User::class)->find($authenticatable->getId());
+        return ['email' => $user->getEmail()];
     }
 }
 ```
@@ -66,15 +71,17 @@ You will also need a scope collection to define the available scopes for the bun
 ```php
 namespace App\Collection;
 
-use App\DTO\Scope\EmailScope;
+use App\Dto\Scope\EmailScope;
+use Doctrine\Common\Collections\ArrayCollection;
 use Snoke\OAuthServer\Interface\ScopeCollectionInterface;
 
-class ScopesCollection implements ScopeCollectionInterface
+class ScopesCollection extends ArrayCollection implements ScopeCollectionInterface
 {
-    public function getScopes(): array {
-        return [
-            'email' => EmailScope::class
-        ];
+    public function __construct(private readonly EmailScope $emailScope)
+    {
+        parent::__construct([
+            'email' => $this->emailScope
+        ]);
     }
 }
 ```
@@ -105,20 +112,36 @@ public function onAuthenticationSuccess(Request $request, TokenInterface $token,
 you can create a client with the following command:
 ```php bin/console oauth:create:client```
 ### client workflow
-- a client will forward a user to the authorize uri and provide its client_id, client_secret and the requested scopes as query parameters:
+- The client redirects the user to the authorization URI, including the client_id, client_secret, and requested scopes as query parameters:
+```
+https://www.yourserver.example/authorize?client_id=123456&client_secret=12346&scopes=email
+```
 
-  ```https://www.yourserver.example/authorize?client_id=123456&client_secret=12346&scopes=email```
+The user is directed to the login page. Upon successful login, the user is redirected to the client's redirect_uri with an authorization code (AuthCode) included as a query parameter.
 
-  this will redirect the user to your login. after a successful login the user will be redirected to the clients redirect_uri with an ```AuthCode``` as query parameter
-
-
-- the client can now trade his auth code for an ```AccessToken``` by making a request to the access-token-uri
+- The client exchanges the authorization code for an access token by making a request to the access token URI. 
+Depending on the configuration, the response may include both an access token and a refresh token.
+The authorization code is included in the Authorization header as a Bearer token:
   
-    ```https://www.yourserver.example/accessToken?client_id=123456&client_secret=12346&scopes=email&code=12346```
+```
+GET https://www.yourserver.example/accessToken?client_id=123456&client_secret=12346&scopes=email
+Headers:
+Authorization: Bearer <AuthCode>
+```
 
-
-- having the access token, it can now be used to fetch user informations (defined by the scopes) from
+- With the access token, the client can fetch user information (as defined by the scopes) by making a request to the user information URI. The access token is included in the Authorization header as a Bearer token:
   
-  ```https://www.yourserver.example/decodeToken?client_id=123456&client_secret=12346&scopes=email&token=12346```
+```
+GET https://www.yourserver.example/decodeToken?client_id=123456&client_secret=12346&scopes=email
+Headers:
+Authorization: Bearer <AccessToken>
+```
+
+- When the access token expires, the client can use the refresh token to obtain a new access token by making a request to the refresh token URI. The refresh token is included in the Authorization header as a Bearer token:
+```
+GET https://www.yourserver.example/refreshToken?client_id=123456&client_secret=12346&scopes=email
+Headers:
+    Authorization: Bearer <RefreshToken>
+```
 
 note that these are the default routes, you can change them in the configuration yaml
