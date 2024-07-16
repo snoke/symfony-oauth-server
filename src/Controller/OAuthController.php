@@ -125,12 +125,10 @@ class OAuthController extends AbstractController
     public function authorize(): Response
     {
         $clientID = $this->requestService->getClientID();
-        $clientSecret = $this->requestService->getClientSecret();
         $grantType = $this->requestService->getGrantType();
         $scopes = $this->requestService->getScopes();
 
         $this->sessionService->setClientID($clientID);
-        $this->sessionService->setClientSecret($clientSecret);
         $this->sessionService->setScopes($scopes);
         $this->sessionService->setGrantType($grantType);
 

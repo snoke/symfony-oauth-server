@@ -114,7 +114,7 @@ you can create a client with the following command:
 ### client workflow
 - The client redirects the user to the authorization URI, including the client_id, client_secret, and requested scopes as query parameters:
 ```
-https://www.yourserver.example/authorize?client_id=123456&client_secret=12346&scopes=email
+https://www.yourserver.example/authorize?client_id=123456&scopes=email
 ```
 
 The user is directed to the login page. Upon successful login, the user is redirected to the client's redirect_uri with an authorization code (AuthCode) included as a query parameter.
