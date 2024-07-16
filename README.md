@@ -47,22 +47,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Authent
 Scopes are implemented as DTOs (Data Transfer Objects). Here is an example:
 ```php
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
 use Snoke\OAuthServer\Interface\AuthenticatableInterface;
 use Snoke\OAuthServer\Interface\ScopeInterface;
 
 readonly class EmailScope implements ScopeInterface
 {
-    public function __construct(private readonly EntityManagerInterface $em)
-    {
-    }
-    
     public function toArray(AuthenticatableInterface $authenticatable): array 
     {
-
         /** @var User $authenticatable  */
-        $user = $this->em->getRepository(User::class)->find($authenticatable->getId());
-        return ['email' => $user->getEmail()];
+        return ['email' => $authenticatable->getEmail()];
     }
 }
 ```
